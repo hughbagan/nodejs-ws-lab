@@ -2,15 +2,38 @@
 // Therefore you can now use ES6 style imports
 
 import * as Phaser from "phaser";
-import { updateFunctionDeclaration } from "typescript";
 
 interface ICoords {
-  x: number;
-  y: number;
-  frame: number;
+  [key: string]: {
+    x: number;
+    y: number;
+    frame: number;  
+  }
 }
 
 const DEBUG = false; // Render debug physics entities
+
+function uuid(
+  a?: any               // placeholder
+): string {
+  return a              // if the placeholder was passed, return
+    ? (                 // a random number from 0 to 15
+      a ^               // unless b is 8,
+      Math.random()     // in which case
+      * 16              // a random number from
+      >> a / 4          // 8 to 11
+    ).toString(16)      // in hexadecimal
+    : (                 // or otherwise a concatenated string:
+      1e7.toString() +  // 10000000 +
+      -1e3 +            // -1000 +
+      -4e3 +            // -4000 +
+      -8e3 +            // -80000000 +
+      -1e11             // -100000000000,
+    ).replace(          // replacing
+      /[018]/g,         // zeroes, ones, and eights with
+      uuid              // random hex digits
+    )
+}
 
 class GameScene extends Phaser.Scene {
   private HOST = window.location.hostname; // localhost and 127.0.0.1 handled
@@ -24,30 +47,8 @@ class GameScene extends Phaser.Scene {
   private upKey?: Phaser.Input.Keyboard.Key;
   private downKey?: Phaser.Input.Keyboard.Key;
 
-  private id = this.uuid();
+  private id = uuid();
   private players: {[key:string]: Phaser.GameObjects.Sprite} = {};
-
-  public uuid(
-    a?: any               // placeholder
-  ): string {
-    return a              // if the placeholder was passed, return
-      ? (                 // a random number from 0 to 15
-        a ^               // unless b is 8,
-        Math.random()     // in which case
-        * 16              // a random number from
-        >> a / 4          // 8 to 11
-      ).toString(16)      // in hexadecimal
-      : (                 // or otherwise a concatenated string:
-        1e7.toString() +  // 10000000 +
-        -1e3 +            // -1000 +
-        -4e3 +            // -4000 +
-        -8e3 +            // -80000000 +
-        -1e11             // -100000000000,
-      ).replace(          // replacing
-        /[018]/g,         // zeroes, ones, and eights with
-        this.uuid              // random hex digits
-      )
-  }
 
   constructor() { super({ key: "GameScene" }); }
 
@@ -81,7 +82,7 @@ class GameScene extends Phaser.Scene {
         if (playerId in this.players) {
           // We have seen this player before-- update it!
           const player = this.players[playerId];
-          if (player.texture.key === " MISSING") {
+          if (player.texture.key === "__MISSING") {
             // Player was instantiated before texture was ready; reinstantiate
             player.destroy();
             this.players[playerId] = this.add.sprite(x, y, "player", frame);
@@ -89,10 +90,10 @@ class GameScene extends Phaser.Scene {
             player.setX(x);
             player.setY(y);
             player.setFrame(frame);
-          } else {
-            // We have not seen this player before -- create it
-            this.players[playerId] = this.add.sprite(x, y, "player", frame);
           }
+        } else {
+          // We have not seen this player before -- create it
+          this.players[playerId] = this.add.sprite(x, y, "player", frame);
         }
       }
     }
